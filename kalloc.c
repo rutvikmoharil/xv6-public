@@ -61,6 +61,8 @@ kfree(char *v)
 {
   struct run *r;
 
+  struct run *ptr;
+  
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
@@ -70,8 +72,19 @@ kfree(char *v)
   if(kmem.use_lock)
     acquire(&kmem.lock);
   r = (struct run*)v;
-  r->next = kmem.freelist;
-  kmem.freelist = r;
+  //r->next = kmem.freelist;
+  //kmem.freelist = r;
+  r->next = 0;
+  ptr = kmem.freelist;
+  if(ptr){
+	  while(ptr->next){
+		  ptr = ptr->next;
+	  }
+	  ptr->next = r;
+  }else{
+	  r->next = kmem.freelist;
+	  kmem.freelist = r;
+  }
   if(kmem.use_lock)
     release(&kmem.lock);
 }
@@ -83,14 +96,30 @@ char*
 kalloc(void)
 {
   struct run *r;
-
+  //struct run *ptr;
   if(kmem.use_lock)
     acquire(&kmem.lock);
   r = kmem.freelist;
-  if(r)
-    kmem.freelist = r->next;
+  //ptr = kmem.freelist;
+  if(r) {
+    //kmem.freelist = r->next;
+  //changing stack structure to queue structure
+  
+	if(!(r->next)) {
+		kmem.freelist = r->next;
+	} else {
+		kmem.freelist = r->next;
+	/*while(r) {
+		if(r->next == kmem.freelist) {
+			break;
+		}
+	ptr = r;
+	r = r->next;*/
+  }
+}
   if(kmem.use_lock)
     release(&kmem.lock);
   return (char*)r;
 }
+
 
